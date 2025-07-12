@@ -33,6 +33,7 @@ if (ZEROMQ_FOUND OR UHD_FOUND)
             srsran_signal_processors
             srsran_channel_processors
             srsran_channel_precoder
+            atomic
             )
     # Add lower PHY sample loopback test with ZeroMQ only if ZeroMQ is available.
     if (ZEROMQ_FOUND AND BUILD_TESTING)
