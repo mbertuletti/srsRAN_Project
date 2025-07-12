@@ -67,6 +67,9 @@ enum class cpu_feature {
   /// CPU supports carry-less multiplication instruction PMULL.
   pmull,
 #endif // __aarch64__
+#ifdef __riscv
+  none,
+#endif // __riscv
 };
 
 constexpr const char* to_string(cpu_feature feature)
@@ -102,6 +105,10 @@ constexpr const char* to_string(cpu_feature feature)
     case cpu_feature::pmull:
       return "pmull";
 #endif // __aarch64__
+#ifdef __riscv
+    case cpu_feature::none:
+      return "";
+#endif // __riscv
   }
   return "invalid_cpu_feature";
 }
@@ -192,6 +199,9 @@ constexpr auto cpu_features_included = to_array<cpu_feature>({
     cpu_feature::neon,
 #endif // __ARM_NEON
 #endif // __aarch64__
+#ifdef __riscv
+    cpu_feature::none,
+#endif // __riscv
 });
 } // namespace detail
 
@@ -206,20 +216,22 @@ inline std::string get_cpu_feature_info()
                    feature,
                    cpu_supports_feature(feature) ? "(ok)" : "(na)");
 #endif // __x86_64__
-#ifdef __aarch64__
+#if defined(__aarch64__) || defined(__riscv)
     fmt::format_to(std::back_inserter(buffer), "{}{}", buffer.size() == 0 ? "" : " ", feature);
-#endif // __aarch64__
+#endif // __aarch64__ or __riscv
   }
   return std::string{srsran::to_c_str(buffer)};
 }
 
 inline bool cpu_supports_included_features()
 {
+#if !defined(__riscv)  
   for (cpu_feature feature : detail::cpu_features_included) {
     if (!cpu_supports_feature(feature)) {
       return false;
     }
   }
+#endif
   return true;
 }
 

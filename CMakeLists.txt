@@ -35,7 +35,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
-
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 include(version) # sets version information
 
@@ -68,6 +67,7 @@ configure_file(
 # Options
 ########################################################################
 
+option(ENABLE_CROSSCOMPILE   "Crosscompile for riscv64 target"            ON)
 option(STOP_ON_WARNING       "Interrupt application on warning"           OFF)
 option(ENABLE_WERROR         "Stop compilation on errors"                 ON)
 option(ENABLE_TSAN           "Enable clang thread sanitizer"              OFF)
@@ -509,29 +509,53 @@ endif (SCTP_FOUND)
 ########################################################################
 # Instruction Set Architecture setup
 ########################################################################
-set(MTUNE "generic" CACHE STRING "Compiler -mtune flag. Default value is 'generic'")
-if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+
+if (ENABLE_CROSSCOMPILE)
+    set(MARCH "rv64imafd" CACHE STRING "Compiler -march flag.")
+    message(STATUS "Crosscompiling for riscv64 processor")
+elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "riscv64")
+    set(MARCH "rv64imafdch" CACHE STRING "Compiler -march flag. Default value is 'rv64imafdch' for riscv64.")
+    set(MTUNE "generic" CACHE STRING "Compiler -mtune flag.")
+    message(STATUS "Detected riscv64 processor")
+elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
     set(MARCH "armv8-a" CACHE STRING "Compiler -march flag. Default value is 'armv8-a' for aarch64.")
+    set(MTUNE "generic" CACHE STRING "Compiler -mtune flag.")
     message(STATUS "Detected aarch64 processor")
-else (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
     set(MARCH "native" CACHE STRING "Compiler -march flag. Default value is 'native' for x86-64.")
-endif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+    set(MTUNE "generic" CACHE STRING "Compiler -mtune flag.")
+    message(STATUS "Detected x86_64 processor")
+else()
+    message(WARNING "Unknown architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif(ENABLE_CROSSCOMPILE)
 
-add_cxx_compiler_flag_if_available("-march=${MARCH}" HAVE_MARCH)
-if (NOT HAVE_MARCH)
-    message(SEND_ERROR "The compiler does not support -march=${MARCH}, try setting a different value.")
-endif (NOT HAVE_MARCH)
+if (ENABLE_CROSSCOMPILE)
+	add_cxx_compiler_flag_if_available("-march=${MARCH}" HAVE_MARCH)
+	if (NOT HAVE_MARCH)
+	    message(SEND_ERROR "The compiler does not support -march=${MARCH}, try setting a different value.")
+	endif (NOT HAVE_MARCH)
+	message(STATUS "ARCH value is ${MARCH}")
 
-add_cxx_compiler_flag_if_available("-mtune=${MTUNE}" HAVE_MTUNE)
-if (NOT HAVE_MTUNE)
-    message(SEND_ERROR "The compiler does not support -mtune=${MTUNE}, try setting a different value.")
-endif (NOT HAVE_MTUNE)
+elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64|x86_64")
+	add_cxx_compiler_flag_if_available("-march=${MARCH}" HAVE_MARCH)
+	if (NOT HAVE_MARCH)
+	    message(SEND_ERROR "The compiler does not support -march=${MARCH}, try setting a different value.")
+	endif (NOT HAVE_MARCH)
+	message(STATUS "ARCH value is ${MARCH}")
+	add_cxx_compiler_flag_if_available("-mtune=${MTUNE}" HAVE_MTUNE)
+	if (NOT HAVE_MTUNE)
+	    message(SEND_ERROR "The compiler does not support -mtune=${MTUNE}, try setting a different value.")
+	endif (NOT HAVE_MTUNE)
+    message(STATUS "TUNE value is ${MTUNE}")
 
-message(STATUS "ARCH value is ${MARCH}")
-message(STATUS "TUNE value is ${MTUNE}")
+endif(ENABLE_CROSSCOMPILE)
 
 # Append march and mtune to the compilation flags.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${MARCH} -mtune=${MTUNE}")
+if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "riscv64" OR ENABLE_CROSSCOMPILE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${MARCH}")
+else(${CMAKE_SYSTEM_PROCESSOR} MATCHES "riscv64" OR ENABLE_CROSSCOMPILE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${MARCH} -mtune=${MTUNE}")
+endif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "riscv64" OR ENABLE_CROSSCOMPILE)
 
 ########################################################################
 # Compiler launcher setup

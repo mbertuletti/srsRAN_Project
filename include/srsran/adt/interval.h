@@ -100,13 +100,18 @@ public:
   /// Move interval by an offset.
   constexpr void displace_by(int offset)
   {
-    srsran_assert(
-        std::is_signed_v<T> or static_cast<int64_t>(start_) >= -offset,
-        "Cannot have negative starting_points in case interval<T> underlying type is unsigned. Start={} < offset={}",
-        start_,
-        -offset);
-    start_ += offset;
-    stop_ += offset;
+    if constexpr (std::is_signed_v<T>) {
+      // signed type: no check needed
+      start_ += offset;
+      stop_ += offset;
+    } else {
+      // unsigned type: add runtime or constexpr-safe check
+      srsran_assert(static_cast<int64_t>(start_) >= -offset,
+                    "Cannot have negative starting_points in case interval<T> underlying type is unsigned. Start={} < offset={}",
+                    start_, -offset);
+      start_ += offset;
+      stop_ += offset;
+    }
   }
 
   /// Move interval start to provided starting point.
