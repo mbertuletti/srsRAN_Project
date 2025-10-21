@@ -32,7 +32,7 @@ static bool validate_upper_phy_threads_appconfig(const du_low_unit_expert_thread
                                                  unsigned                                 nof_hwacc_pusch)
 {
   static const interval<unsigned, true> nof_ul_dl_threads_range(1, std::thread::hardware_concurrency());
-  static const interval<unsigned, true> nof_pdsch_threads_range(2, std::thread::hardware_concurrency());
+  static const interval<unsigned, true> nof_pdsch_threads_range(1, std::thread::hardware_concurrency());
 
   bool valid = true;
 
