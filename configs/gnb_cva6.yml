@@ -1,0 +1,80 @@
+ran_node_name: cu_cp_01
+gnb_id: 411
+gnb_id_bit_length: 22
+
+cu_cp:
+  amf:
+    no_core: true
+    addr: 127.0.0.1
+    port: 38412
+    bind_addr: 127.0.0.2
+    supported_tracking_areas:
+      - tac: 1
+        plmn_list:
+          - plmn: "00101"
+            tai_slice_support_list:
+              - sst: 1
+                sd: 1
+
+ru_dummy:
+
+test_mode:
+  test_ue:
+      rnti: 0x4601
+      nof_ues: 1
+      pdsch_active: true
+      pusch_active: true
+      cqi: 15
+      pmi: 0
+      ri: 1
+
+cell_cfg:
+  dl_arfcn: 368500
+  band: 3
+  channel_bandwidth_MHz: 5
+  common_scs: 15
+  plmn: "00101"
+  tac: 1
+  pci: 1
+  nof_antennas_ul: 1
+  nof_antennas_dl: 1
+  pucch:
+    nof_cell_harq_pucch_res_sets: 1
+
+buffer_pool:
+        nof_segments: 131072
+        segment_size: 2048
+        
+log:
+  filename: gnb.log
+  all_level: warning
+
+expert_execution:   
+  threads:                         
+    non_rt:                        
+      nof_non_rt_threads: 1
+      non_rt_task_queue_size: 512
+    upper_phy:              
+      pdsch_processor_type: flexible
+      pdsch_cb_batch_length: synchronous
+      nof_pusch_decoder_threads: 1
+      nof_dl_threads: 1          
+      nof_dl_threads: 1
+    lower_phy:                      
+      execution_profile: single         
+    ofh:                          
+      enable_dl_parallelization: false
+  queues:                        
+    cu_up_dl_ue_executor_queue_size: 128
+    cu_up_ul_ue_executor_queue_size: 128
+    cu_up_ctrl_ue_executor_queue_size: 128
+    cu_up_strand_batch_size: 128        
+    du_ue_data_executor_queue_size: 128
+                                        
+cu_up:                                  
+  ngu:                                    
+    no_core: true               
+    gtpu:                              
+      queue_size: 128                 
+                    
+  
