@@ -61,7 +61,7 @@ static void add_ccc_simd(const cf_t* x, const cbf16_t* y, cf_t* z, std::size_t l
 {
   std::size_t i = 0;
 
-#if SRSRAN_SIMD_F_SIZE
+#if (SRSRAN_SIMD_F_SIZE && SRSRAN_SIMD_CF_SIZE)
   for (std::size_t i_end = (len / SRSRAN_SIMD_F_SIZE) * SRSRAN_SIMD_F_SIZE; i != i_end; i += SRSRAN_SIMD_F_SIZE) {
     simd_cf_t a = srsran_simd_cfi_loadu(x + i);
     simd_cf_t b = srsran_simd_cbf16_loadu(y + i);

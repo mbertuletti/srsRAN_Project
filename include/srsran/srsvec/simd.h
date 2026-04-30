@@ -45,6 +45,10 @@
 #include <arm_neon.h>
 #endif // __ARM_NEON
 
+#ifdef __riscv_vector
+#include <riscv_vector.h>
+#endif
+
 namespace srsran {
 
 inline bool is_simd_addr_aligned(const void* addr, uintptr_t mask)
@@ -138,6 +142,18 @@ inline bool        SIMD_IS_ALIGNED(const void* ptr)
 #define SRSRAN_SIMD_C16_SIZE 8
 
 #else /* __ARM_NEON */
+#ifdef __riscv_vector
+
+#define SRSRAN_SIMD_F_SIZE 4
+#define SRSRAN_SIMD_CF_SIZE 0
+
+#define SRSRAN_SIMD_I_SIZE 0
+#define SRSRAN_SIMD_B_SIZE 0
+#define SRSRAN_SIMD_S_SIZE 0
+#define SRSRAN_SIMD_C16_SIZE 0
+
+#else /* __riscv_vector */
+
 #define SRSRAN_SIMD_F_SIZE 0
 #define SRSRAN_SIMD_CF_SIZE 0
 
@@ -146,6 +162,7 @@ inline bool        SIMD_IS_ALIGNED(const void* ptr)
 #define SRSRAN_SIMD_S_SIZE 0
 #define SRSRAN_SIMD_C16_SIZE 0
 
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -173,6 +190,10 @@ using simd_f_t = __m128;
 #else /* __ARM_NEON */
 #ifdef __ARM_NEON
 using simd_f_t = float32x4_t;
+#else /* __riscv_vector */
+#ifdef __riscv_vector
+using simd_f_t = vfloat32m1_t;
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -195,6 +216,11 @@ inline simd_f_t srsran_simd_f_load(const float* ptr)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vld1q_f32(ptr);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vle32_v_f32m1(ptr, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -214,6 +240,11 @@ inline simd_f_t srsran_simd_f_loadu(const float* ptr)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vld1q_f32(ptr);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vle32_v_f32m1(ptr, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -233,6 +264,11 @@ inline void srsran_simd_f_store(float* ptr, simd_f_t simdreg)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   vst1q_f32(ptr, simdreg);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  __riscv_vse32_v_f32m1(ptr, simdreg, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -252,6 +288,11 @@ inline void srsran_simd_f_storeu(float* ptr, simd_f_t simdreg)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   vst1q_f32(ptr, simdreg);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  __riscv_vse32_v_f32m1(ptr, simdreg, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -293,6 +334,22 @@ inline void srsran_simd_f_storeu_interleaved(float* ptr, simd_f_t a, simd_f_t b)
   ab_combined.val[0] = a;
   ab_combined.val[1] = b;
   vst2q_f32(reinterpret_cast<float*>(ptr), ab_combined);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  float tmp_a[4];
+  float tmp_b[4];
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  __riscv_vse32_v_f32m1(tmp_a, a, vl);
+  __riscv_vse32_v_f32m1(tmp_b, b, vl);
+  ptr[0] = tmp_a[0];
+  ptr[1] = tmp_b[0];
+  ptr[2] = tmp_a[1];
+  ptr[3] = tmp_b[1];
+  ptr[4] = tmp_a[2];
+  ptr[5] = tmp_b[2];
+  ptr[6] = tmp_a[3];
+  ptr[7] = tmp_b[3];
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -312,6 +369,11 @@ inline simd_f_t srsran_simd_f_set1(float x)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vdupq_n_f32(x);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vfmv_v_f_f32m1(x, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -331,6 +393,11 @@ inline simd_f_t srsran_simd_f_mul(simd_f_t a, simd_f_t b)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vmulq_f32(a, b);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vfmul_vv_f32m1(a, b, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -350,6 +417,12 @@ inline simd_f_t srsran_simd_f_rcp(simd_f_t a)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vmulq_f32(vrecpeq_f32(a), vrecpsq_f32(vrecpeq_f32(a), a));
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  simd_f_t one = __riscv_vfmv_v_f_f32m1(1.0f, vl);
+  return __riscv_vfdiv_vv_f32m1(one, a, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -381,6 +454,16 @@ inline simd_f_t srsran_simd_f_addsub(simd_f_t a, simd_f_t b)
     }
   }
   return ret;
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  simd_f_t add = __riscv_vfadd_vv_f32m1(a, b, vl);
+  simd_f_t sub = __riscv_vfsub_vv_f32m1(a, b, vl);
+  vuint32m1_t idx = __riscv_vid_v_u32m1(vl);
+  vuint32m1_t odd = __riscv_vand_vx_u32m1(idx, 1, vl);
+  vbool32_t even  = __riscv_vmseq_vx_u32m1_b32(odd, 0, vl);
+  return __riscv_vmerge_vvm_f32m1(add, sub, even, vl);
+#endif            /* __riscv_vector */
 #endif            /* __ARM_NEON */
 #endif            /* __SSE4_1__ */
 #endif            /* __AVX2__ */
@@ -400,6 +483,11 @@ inline simd_f_t srsran_simd_f_sub(simd_f_t a, simd_f_t b)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vsubq_f32(a, b);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vfsub_vv_f32m1(a, b, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -433,6 +521,11 @@ inline simd_f_t srsran_simd_f_add(simd_f_t a, simd_f_t b)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vaddq_f32(a, b);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vfadd_vv_f32m1(a, b, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -451,6 +544,9 @@ inline simd_f_t srsran_simd_f_fma(simd_f_t acc, simd_f_t a, simd_f_t b)
   return _mm_add_ps(_mm_mul_ps(a, b), acc);
 #elif defined(__ARM_NEON)
   return vmlaq_f32(acc, a, b);
+#elif defined(__riscv_vector)
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vfmacc_vv_f32m1(acc, a, b, vl);
 #endif
 }
 
@@ -467,6 +563,11 @@ inline simd_f_t srsran_simd_f_zero()
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vdupq_n_f32(0);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vfmv_v_f_f32m1(0.0f, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -486,6 +587,13 @@ inline simd_f_t srsran_simd_f_swap(simd_f_t a)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vcombine_f32(vrev64_f32(vget_low_f32(a)), vrev64_f32(vget_high_f32(a)));
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  static const uint32_t idx_mem[4] = {1, 0, 3, 2};
+  vuint32m1_t idx = __riscv_vle32_v_u32m1(idx_mem, vl);
+  return __riscv_vrgather_vv_f32m1(a, idx, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -527,6 +635,17 @@ inline simd_f_t srsran_simd_f_hadd(simd_f_t a, simd_f_t b)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vcombine_f32(vpadd_f32(vget_low_f32(a), vget_high_f32(a)), vpadd_f32(vget_low_f32(b), vget_high_f32(b)));
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  float aa[4], bb[4], out[4];
+  srsran_simd_f_storeu(aa, a);
+  srsran_simd_f_storeu(bb, b);
+  out[0] = aa[0] + aa[1];
+  out[1] = aa[2] + aa[3];
+  out[2] = bb[0] + bb[1];
+  out[3] = bb[2] + bb[3];
+  return srsran_simd_f_loadu(out);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -556,6 +675,11 @@ inline simd_f_t srsran_simd_f_sqrt(simd_f_t a)
   uint32x4_t mask = vceqq_f32(a, zeros);
   // Force zero results and return.
   return vbslq_f32(mask, zeros, result);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vfsqrt_v_f32m1(a, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -576,6 +700,11 @@ inline simd_f_t srsran_simd_f_neg(simd_f_t a)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vnegq_f32(a);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vfneg_v_f32m1(a, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -595,6 +724,14 @@ inline simd_f_t srsran_simd_f_neg_mask(simd_f_t a, simd_f_t mask)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return (float32x4_t)veorq_s32((int32x4_t)a, (int32x4_t)mask);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  vint32m1_t ai = __riscv_vreinterpret_v_f32m1_i32m1(a);
+  vint32m1_t mi = __riscv_vreinterpret_v_f32m1_i32m1(mask);
+  vint32m1_t ri = __riscv_vxor_vv_i32m1(ai, mi, vl);
+  return __riscv_vreinterpret_v_i32m1_f32m1(ri);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */
@@ -614,6 +751,11 @@ inline simd_f_t srsran_simd_f_abs(simd_f_t a)
 #else /* __SSE4_1__ */
 #ifdef __ARM_NEON
   return vabsq_f32(a);
+#else /* __ARM_NEON */
+#ifdef __riscv_vector
+  size_t vl = __riscv_vsetvl_e32m1(4);
+  return __riscv_vfabs_v_f32m1(a, vl);
+#endif /* __riscv_vector */
 #endif /* __ARM_NEON */
 #endif /* __SSE4_1__ */
 #endif /* __AVX2__ */

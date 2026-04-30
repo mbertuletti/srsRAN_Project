@@ -513,7 +513,7 @@ endif (SCTP_FOUND)
 ########################################################################
 
 if (ENABLE_CROSSCOMPILE)
-    set(MARCH "rv64imafd" CACHE STRING "Compiler -march flag.")
+    set(MARCH "rv64gcv" CACHE STRING "Compiler -march flag.")
     message(STATUS "Crosscompiling for riscv64 processor")
 elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "riscv64")
     set(MARCH "rv64imafdch" CACHE STRING "Compiler -march flag. Default value is 'rv64imafdch' for riscv64.")

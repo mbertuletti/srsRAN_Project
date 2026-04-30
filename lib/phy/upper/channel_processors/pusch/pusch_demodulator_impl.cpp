@@ -227,7 +227,7 @@ static float filter_infinite_and_accumulate(unsigned& count, span<const float> i
   float    sum = 0;
   unsigned i   = 0;
 
-#if SRSRAN_SIMD_F_SIZE
+#if (SRSRAN_SIMD_F_SIZE && SRSRAN_SIMD_I_SIZE)
   const simd_f_t simd_infinity     = srsran_simd_f_set1(std::numeric_limits<float>::infinity());
   const simd_f_t simd_neg_infinity = srsran_simd_f_set1(-std::numeric_limits<float>::infinity());
   const simd_i_t simd_one          = srsran_simd_i_set1(1);
